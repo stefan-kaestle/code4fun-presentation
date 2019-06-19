@@ -1,0 +1,706 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{tikz}
+\usepackage[utf8]{inputenc}
+\usepackage{minted}
+\usepackage{pdfpages}
+%\usepackage{pgfpages}
+% \setbeameroption{show notes on second screen}
+%\setbeameroption{show notes on second screen}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usetikzlibrary{shapes,calc}
+\title{Rust @ Code4Fun}
+\author{Stefan Kaestle}
+
+%\setbeameroption{show notes}
+%\setbeameroption{show notes on second screen=right}
+
+\begin{document}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \titlepage
+
+    \begin{tikzpicture}[remember picture, overlay]
+      \node[anchor=north east,xshift=2cm,yshift=-1cm] at (current page.north east) {
+        \includegraphics[width=.5\textwidth]{figs/prime-tower}
+      };
+    \end{tikzpicture}
+
+    \note{Ask what OSes people are using}
+
+\end{frame}
+
+\logo{\includegraphics[height=1.2cm]{figs/ferris}\vspace{220pt}}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{About me}{}
+
+  \begin{columns}
+    \begin{column}{.75\linewidth}
+      \begin{itemize}
+        \item Stefan
+        \item Since 2016: Oracle Labs, Distributed Graph Processing
+        \item Background: ETH Systems Group, Barrelfish OS
+        \item Rust since $\sim$9 months
+          \begin{itemize}
+          \item So absolutely no expert :-)
+          \end{itemize}
+      \end{itemize}
+    \end{column}
+
+    \begin{column}{.25\linewidth}
+      \includegraphics[width=.8\linewidth]{figs/eth_logo}
+
+      \vspace{.5cm}
+      \includegraphics[width=.8\linewidth]{figs/barrelfish}
+
+      \vspace{.5cm}
+      \includegraphics[width=.8\linewidth]{figs/oracle_logo}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{About me: Programming languages}{}
+
+
+  \begin{columns}
+    \begin{column}{.4\linewidth}
+
+      \def\angle{0}
+      \def\radius{3}
+      \def\cyclelist{{"orange","blue","red","green"}}
+      \newcount\cyclecount \cyclecount=-1
+      \newcount\ind \ind=-1
+      \begin{tikzpicture}[scale=.8,nodes = {font=\sffamily}]
+        \foreach \percent/\name in {
+          25/Rust,
+          15/Python,
+          15/Java,
+          45/C++
+        } {
+          \ifx\percent\empty\else               % If \percent is empty, do nothing
+          \global\advance\cyclecount by 1     % Advance cyclecount
+          \global\advance\ind by 1            % Advance list index
+          \ifnum3<\cyclecount                 % If cyclecount is larger than list
+          \global\cyclecount=0              %   reset cyclecount and
+          \global\ind=0                     %   reset list index
+          \fi
+          \pgfmathparse{\cyclelist[\the\ind]} % Get color from cycle list
+          \edef\color{\pgfmathresult}         %   and store as \color
+          % Draw angle and set labels
+          \draw[fill={\color!50},draw={\color}] (0,0) -- (\angle:\radius)
+          arc (\angle:\angle+\percent*3.6:\radius) -- cycle;
+          \node at (\angle+0.5*\percent*3.6:0.7*\radius) {\percent\,\%};
+          \node[pin=\angle+0.5*\percent*3.6:\name]
+          at (\angle+0.5*\percent*3.6:\radius) {};
+          \pgfmathparse{\angle+\percent*3.6}  % Advance angle
+          \xdef\angle{\pgfmathresult}         %   and store in \angle
+          \fi
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{.6\linewidth}
+      \pause
+
+      \def\angle{0}
+      \def\radius{3}
+      \def\cyclelist{{"orange","blue","red","green"}}
+      \newcount\cyclecount \cyclecount=-1
+      \newcount\ind \ind=-1
+      \begin{tikzpicture}[scale=.8,nodes = {font=\sffamily}]
+        \foreach \percent/\name in {
+          25/Rust,
+          75/Wish I'd do Rust
+        } {
+          \ifx\percent\empty\else               % If \percent is empty, do nothing
+          \global\advance\cyclecount by 1     % Advance cyclecount
+          \global\advance\ind by 1            % Advance list index
+          \ifnum3<\cyclecount                 % If cyclecount is larger than list
+          \global\cyclecount=0              %   reset cyclecount and
+          \global\ind=0                     %   reset list index
+          \fi
+          \pgfmathparse{\cyclelist[\the\ind]} % Get color from cycle list
+          \edef\color{\pgfmathresult}         %   and store as \color
+          % Draw angle and set labels
+          \draw[fill={\color!50},draw={\color}] (0,0) -- (\angle:\radius)
+          arc (\angle:\angle+\percent*3.6:\radius) -- cycle;
+          \node at (\angle+0.5*\percent*3.6:0.7*\radius) {\percent\,\%};
+          \node[pin=\angle+0.5*\percent*3.6:\name]
+          at (\angle+0.5*\percent*3.6:\radius) {};
+          \pgfmathparse{\angle+\percent*3.6}  % Advance angle
+          \xdef\angle{\pgfmathresult}         %   and store in \angle
+          \fi
+        };
+      \end{tikzpicture}
+
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+
+\section{Intro to Rust}
+\frame{\sectionpage}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Short history of Rust}{}
+
+  \begin{columns}
+    \begin{column}{.75\linewidth}
+      \begin{itemize}
+      \item Developed by Mozilla Research
+      \item Goal: better memory safety, but retain high-performance
+      \item Announced in 2010
+      \item 2011: First successfully compiled \mintinline{bash}{rustc}
+      \end{itemize}
+    \end{column}
+    \begin{column}{.25\linewidth}
+      \includegraphics[width=\linewidth]{figs/rust-logo}
+    \end{column}
+  \end{columns}
+
+  \pause
+
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[rounded corners,fill=green!50,yshift=-1.25cm,xshift=-3.5cm,anchor=north east] at (current page.north east) (f) {
+      \begin{tabular}{c}
+        Ohh, and there's this little fella\\
+        Meet \href{https://www.rustacean.net/}{ferries}, the crab
+      \end{tabular}
+    };
+    \draw[green, ultra thick, ->] (f.east) -- ($(current page.north east)-(1.3,1.2)$);
+  \end{tikzpicture}
+
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Why Rust?}{}
+
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \includegraphics[width=\linewidth]{figs/screenshots/presentation-20190614-133942}
+    \end{column}
+    \begin{column}{.5\linewidth}
+      \only<2-> {
+        \includegraphics[width=\linewidth]{figs/screenshots/presentation-20190614-134442}
+        }
+    \end{column}
+  \end{columns}
+  \begin{columns}
+    \begin{column}{.3\linewidth}
+      \begin{itemize}
+      \item People love it
+      \end{itemize}
+    \end{column}
+    \begin{column}{.3\linewidth}
+      \only<2-> {
+      \begin{itemize}
+      \item Interest to learn it
+      \end{itemize}
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Why Rust?}{}
+
+  \includegraphics[width=.5\linewidth]{figs/screenshots/presentation-20190614-135255}
+
+  \begin{itemize}
+  \item Rustaceans get paid well
+  \end{itemize}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Why now?}{Industry puts Rust to production}
+
+  \begin{itemize}
+  \item Mozilla: sytlo, soon WebRender
+  \item Dropbox: storage system
+  \item Facebook: Mercurial rewrite
+  \item Google: Fuschia OS
+  \item Amazon: Firecracker VMM
+  \item Microsoft: Azure
+  \item Oracle: railcar
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Why Rust  - better programs}
+
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \begin{itemize}
+      \item Robustness + Reliability
+        \begin{itemize}
+        \item Memory safety
+        \item Thread safety
+        \item Result error types (\mintinline{rust}{Result<T, E>})
+        \end{itemize}
+      \end{itemize}
+    \end{column}
+
+    \pause
+
+    \begin{column}{.5\linewidth}
+      \begin{itemize}
+      \item Performance
+        \begin{itemize}
+        \item Compiled language
+        \item \emph{No garbage collection}
+        \item Lightweight standard lib
+        \end{itemize}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Overview: Safety in programming languages}{}
+
+  \begin{tikzpicture}[remember picture, overlay,
+    language/.style={
+      rounded corners,
+      minimum width=4cm,
+      minimum height=.8cm,
+      fill=blue!10!white,
+    },
+    property/.style={
+      minimum width=3cm,
+      minimum height=.5cm,
+      fill=green!10!white,
+      anchor=north,
+      font=\tiny
+    }]
+        \draw[] (current page.north west) rectangle (current page.south east) node[midway] (a) {};
+
+        \node[ellipse,fill=black!5!white,minimum width=8cm,minimum height=4cm] at (a) (b) {};
+
+        %% Rust
+        \node[language] at (b.north east) (c) {Rust};
+        \node[property,xshift=1cm] at (c.south) (c1) {Static Type Safety};
+        \node[property] at (c1.south) (c2) {Memory Safety};
+        \node[property] at (c2.south) (c3) {Data Race Freedom};
+
+        %% C++
+        \node[language] at (b.north west) (d) {C++};
+        \node[property,xshift=1cm] at (d.south) (d1) {Static Type Safety};
+
+        %% Java
+        \node[language] at (b.south east) (e) {Java};
+        \node[property,xshift=1cm] at (e.south) (e1) {Static Type Safety};
+        \node[property] at (e1.south) (e2) {Memory Safety};
+
+        %% Python
+        \node[language] at (b.south west) (f) {Python};
+        % \node[property,xshift=1cm] at (f.south) (f1) {Static Type Safety};
+        \node[property] at (f.south) (f2) {Memory Safety};
+        % \node[property] at (f2.south) (f3) {Data Race Freedom};
+    \end{tikzpicture}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Why Rust - benefits for programmers}
+
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \includegraphics[width=\linewidth]{figs/screenshots/presentation-20190612-105305}
+    \end{column}
+
+    \begin{column}{.5\linewidth}
+      \begin{itemize}
+      \item Extremely helpful compiler messages
+      \item Push complexity to compilation, rather than runtime
+
+      \item Very good tooling
+      \item Good IDE integration
+      \item Good documentation: \mintinline{bash}{rustup doc}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Dependency management}
+
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \includegraphics[width=\linewidth]{figs/screenshots/presentation-20190612-103959}
+    \end{column}
+
+    \begin{column}{.5\linewidth}
+      \begin{itemize}
+      \item Large selection of external modules (called \emph{crates})
+      \item Generally very good code quality
+      \end{itemize}
+    \end{column}
+
+    \begin{tikzpicture}[remember picture, overlay]
+      \node[star,star points=7,fill=green!50,yshift=1cm,xshift=-1cm,anchor=south east] at (current page.south east) {
+        \tiny more later };
+    \end{tikzpicture}
+  \end{columns}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Okay, so what are the cons}
+
+  \begin{itemize}
+  \item Steep learning curve
+    \begin{itemize}
+    \item Some have reported up to a month to become productive
+    \end{itemize}
+    \pause
+  \item Can be frustrating at times
+    \begin{itemize}
+    \item Don't give up, simplify code, ask community
+      \begin{itemize}
+      \item The compiler is (almost) always right, if it isn't happy, neither should you
+      \end{itemize}
+    \end{itemize}
+    \pause
+  \item Compilation times can be long
+    \begin{itemize}
+    \item Rust compiles all code, even from dependencies
+    \end{itemize}
+    \pause
+  \item Some things need getting used to:
+    \begin{itemize}
+    \item No OOP as in the traditional sense
+    \item Traits
+    \end{itemize}
+  \end{itemize}
+
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[star,star
+    points=7,fill=red!50,yshift=2cm,xshift=-2cm,anchor=south east] at
+    (current page.south east) {
+      \begin{tabular}{c}
+        \tiny Not today, \\
+        \tiny $\rightarrow$ Rust book
+      \end{tabular}
+      };
+  \end{tikzpicture}
+
+  \pause
+  \begin{itemize}
+  \item Goal today: help you get over the initial fear
+  \item Plus: Rust community generally very helpful
+  \end{itemize}
+
+\end{frame}
+
+\section{Okay, let's get started}
+\frame{\sectionpage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Let's get started}
+
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \begin{itemize}
+      \item \mintinline{rust}{fn} keyword for functions
+      \item Relatively similar to C/C++
+      \end{itemize}
+    \end{column}
+
+    \begin{column}{.5\linewidth}
+      \begin{minted}{rust}
+        fn main() {
+          println!("Hello world");
+        }
+      \end{minted}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Installing Rust}
+
+  \begin{columns}
+    \begin{column}{.4\linewidth}
+      \includegraphics[width=\linewidth]{figs/screenshots/presentation-20190612-110530}
+    \end{column}
+
+    \begin{column}{.6\linewidth}
+      \includegraphics[width=\linewidth]{figs/screenshots/presentation-20190612-110503}
+    \end{column}
+  \end{columns}
+
+  \vspace{.5cm}
+  \begin{itemize}
+  \item Download from \href{rust-lang.org}{rust-lang.org} $\rightarrow$ Get started
+  \item Also: online editor: \href{http://play.rust-lang.org}{play.rust-lang.org}
+  \item Default settings in installer work well
+  \item User installation works, no root needed
+  \item Need \mintinline{bash}{build-essentials}
+  \end{itemize}
+\end{frame}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Rust tooling}{}
+
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \mintinline{bash}{rustc}
+
+      \begin{itemize}
+      \item The Rust compiler
+      \item Normally not used directly
+      \end{itemize}
+
+      \vspace{.5cm}
+
+      \mintinline{bash}{rustup}
+
+      \begin{itemize}
+      \item Used to manage and update tool-chains
+      \item Documentation and help with error handling
+      \end{itemize}
+    \end{column}
+
+    \begin{column}{.5\linewidth}
+      \mintinline{bash}{cargo}
+
+      \begin{itemize}
+      \item Rust's build system
+      \item Used to create projects
+      \item Dependency management
+
+      \item Compile your programs \mintinline{bash}{cargo build}
+      \item Run your programs \mintinline{bash}{cargo run}
+      \end{itemize}
+
+      \qquad \qquad \href{https://doc.rust-lang.org/book/ch01-03-hello-cargo.html}{More in Rust book}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Meet cargo}
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \begin{minted}{bash}
+        > which cargo
+        > which rustc
+
+        > cargo new hello_world
+        > cd hello_world
+        > ls -R
+        .:
+        Cargo.toml  src
+
+        ./src:
+        main.rs
+      \end{minted}
+    \end{column}
+
+    \begin{column}{.6\linewidth}
+      \begin{itemize}
+      \item Creates an empty project
+      \item Creates a git repository
+      \item Two files
+        \begin{itemize}
+        \item \mintinline{bash}{Cargo.toml}: Dependency management and project info
+        \item \mintinline{bash}{main.rs}: Main Rust file
+        \end{itemize}
+
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Lets run it}
+  \begin{columns}
+    \begin{column}{.5\linewidth}
+      \begin{minted}{bash}
+        cargo run
+      \end{minted}
+    \end{column}
+
+    \begin{column}{.6\linewidth}
+      \includegraphics[width=.8\linewidth]{figs/screenshots/presentation-20190612-111656}
+    \end{column}
+  \end{columns}
+
+  \vspace{1cm}
+
+  \begin{itemize}
+  \item That wasn't all too hard!
+  \item Also:
+    \begin{itemize}
+    \item \mintinline{bash}{cargo run --release}
+    \item \mintinline{bash}{cargo build [--release]}
+    \item Compiled binaries are in \mintinline{bash}{target/{release,debug}/{app}}
+    \item Rust compiler uses \mintinline{bash}{clang}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{Playtime}
+\frame{\sectionpage}
+
+\begin{frame}[fragile]
+  \frametitle{Playtime --- recap}
+
+  \begin{columns}
+
+    \begin{column}{.4\linewidth}
+      \begin{itemize}
+      \item Functions
+      \item Error handling
+      \item Variables, default: immutable
+      \item Typed w/ inference
+      \end{itemize}
+    \end{column}
+
+    \begin{column}{.6\linewidth}
+      \begin{minted}{rust}
+        fn hello(s: String) {
+          println!(s);
+        }
+
+        fn main() {
+          let mut s = "Hello".to_string();
+          s += " world";
+          hello(s);
+        }
+      \end{minted}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% \begin{frame}
+%   \frametitle{Traits}
+%   \begin{itemize}
+%   \item Rust decouples data from code
+%   \item It's not object oriented in the classical sense
+%   \item Data is stored in \mintinline{rust}{structs}
+%   \item Methods can be added for these \mintinline{rust}{structs}
+%   \end{itemize}
+% \end{frame}
+
+\section{Memory safety}
+\frame{\sectionpage}
+
+\begin{frame}
+  \frametitle{Memory Safety}
+
+  \begin{itemize}
+  \item Like Java:
+    \begin{itemize}
+    \item Automatic memory dealloc
+    \item Checks index out of bound
+    \end{itemize}
+  \pause
+  \item \emph{But:} No garbage collection (GC) needed
+    \begin{itemize}
+    \item $\rightarrow$ No overhead from running GC
+    \end{itemize}
+
+  \pause
+  \item Instead: ownership + borrow checker
+  \item Sharing: wrap data in synchronization primitives, checked by compiler
+
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Garbage collection: memory management in Java}
+
+  Short review of garbage collected languages, here: Java\\
+  Slides from: \href{http://www.rust-tutorials.com/RustConf17/}{RustConf17}
+
+\end{frame}
+
+{
+  \setbeamercolor{background canvas}{bg=}
+  \includepdf[pages=20-36]{/home/skaestle/specs/rust/ownership}
+}
+
+\begin{frame}
+  \frametitle{Ownership in Rust}
+
+  Hold on tight: this is going to be a bit more tricky (but perhaps easier than GC).\\
+  Slides from: \href{http://www.rust-tutorials.com/RustConf17/}{RustConf17}
+
+\end{frame}
+
+{
+  \setbeamercolor{background canvas}{bg=}
+  \includepdf[pages=9-19]{/home/skaestle/specs/rust/ownership}
+}
+
+
+\begin{frame}
+  \frametitle{Ownership in Rust: Borrowing}
+
+  What about references?\\
+  Slides from: \href{http://www.rust-tutorials.com/RustConf17/}{RustConf17}
+
+\end{frame}
+
+{
+  \setbeamercolor{background canvas}{bg=}
+  \includepdf[pages=87-107]{/home/skaestle/specs/rust/ownership-and-borrowing}
+}
+
+\section{Thread safety}
+\frame{\sectionpage}
+
+\begin{frame}
+  \frametitle{Thread safety}
+
+  \begin{itemize}
+  \item Sharing possible by means of reference, as with C/C++ and Java
+  \item One writable reference to data only
+  \item \emph{Or} arbitrarily many read-only references
+
+  \end{itemize}
+\end{frame}
+
+\section{A proper example: ORM + webserver}
+\frame{\sectionpage}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Setup dependencies}{Diesel: ORM for Rust}
+
+  \begin{itemize}
+  \item \mintinline{bash}{cargo install diesel_cli --no-default-features --features mysql}
+  \item \mintinline{bash}{echo DATABASE_URL="mysql://rustuser:\%23Code4Fun@130.61.92.85/"\ }
+    \mintinline{bash}{"rustdemo" > .env}
+  \end{itemize}
+  \begin{itemize}
+  \item diesel setup
+  \item diesel print-schema
+  \end{itemize}
+\end{frame}
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[c]{Where to go from here?}{}
+
+  \begin{itemize}
+  \item Look at the \href{https://doc.rust-lang.org/book/ch01-03-hello-cargo.html}{Rust book}
+  \item Join meetup ``\href{https://www.meetup.com/Rust-Zurich/}{Rust Zurich}''
+  \end{itemize}
+\end{frame}
+
+\end{document}
